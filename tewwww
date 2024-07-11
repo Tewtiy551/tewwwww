@@ -1,0 +1,207 @@
+_G.Reach = 100
+_G.KeyBindHigher = Enum.KeyCode.Q
+_G.KeyBindLower = Enum.KeyCode.E
+_G.AutoClicker = true
+_G.LockOnEnabled = false
+
+local hardcodedWhitelist = {
+    ["Player1"] = true,
+    ["Player2"] = true,
+    -- Add more players as needed
+}
+
+local function isWhitelisted(playerName)
+    return hardcodedWhitelist[playerName] or false
+end
+
+local function breakLimbs(player)
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        local limbs = {"Left Arm", "Left Leg", "Right Arm", "Right Leg"}
+        for _, limbName in ipairs(limbs) do
+            local limb = player.Character:FindFirstChild(limbName)
+            if limb then
+                limb:BreakJoints()
+                limb.Transparency = 1
+                limb.CanCollide = false
+                limb.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(1, 0, -3.5)
+            end
+        end
+    end
+end
+
+local function addToWhitelist(playerName)
+    for _, player in ipairs(game.Players:GetPlayers()) do
+        if string.lower(player.Name):sub(1, #playerName) == string.lower(playerName) then
+            hardcodedWhitelist[player.Name] = true
+        end
+    end
+    updateWhitelistGUI()
+end
+
+local function removeFromWhitelist(playerName)
+    hardcodedWhitelist[playerName] = nil
+    updateWhitelistGUI()
+end
+
+local function updateWhitelistGUI()
+    local existingGui = game.Players.LocalPlayer.PlayerGui:FindFirstChild("WhitelistGUI")
+    if existingGui then
+        existingGui:Destroy()
+    end
+    createWhitelistGUI()
+end
+
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    local focusedTextBox = game:GetService("UserInputService"):GetFocusedTextBox()
+    if not focusedTextBox then
+        if input.KeyCode == _G.KeyBindHigher then
+            _G.Reach = _G.Reach + 1
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Notification",
+                Text = "Reach set to " .. _G.Reach,
+                Icon = "",
+                Duration = 1
+            })
+        elseif input.KeyCode == _G.KeyBindLower then
+            _G.Reach = _G.Reach - 1
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Notification",
+                Text = "Reach set to " .. _G.Reach,
+                Icon = "",
+                Duration = 1
+            })
+        elseif input.KeyCode == Enum.KeyCode.F then
+            _G.LockOnEnabled = not _G.LockOnEnabled
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Notification",
+                Text = "Lock-On " .. (_G.LockOnEnabled and "Enabled" or "Disabled"),
+                Icon = "",
+                Duration = 1
+            })
+        end
+    end
+end)
+
+local function createWhitelistGUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "WhitelistGUI"
+    ScreenGui.Parent = game.CoreGui -- Use CoreGui to avoid destruction on death
+
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 200, 0, 50)
+    Frame.Position = UDim2.new(1, -210, 1, -60) -- Bottom right corner
+    Frame.BackgroundTransparency = 0.5
+    Frame.BackgroundColor3 = Color3.new(0, 0, 0)
+    Frame.Parent = ScreenGui
+
+    local TextBox = Instance.new("TextBox")
+    TextBox.Size = UDim2.new(0.6, 0, 1, 0)
+    TextBox.Position = UDim2.new(0, 5, 0, 0)
+    TextBox.PlaceholderText = "Enter player name..."
+    TextBox.Parent = Frame
+
+    local AddButton = Instance.new("TextButton")
+    AddButton.Size = UDim2.new(0.2, 0, 1, 0)
+    AddButton.Position = UDim2.new(0.6, 5, 0, 0)
+    AddButton.BackgroundColor3 = Color3.new(0, 1, 0)
+    AddButton.Text = "Add"
+    AddButton.TextColor3 = Color3.new(1, 1, 1)
+    AddButton.Parent = Frame
+
+    local RemoveButton = Instance.new("TextButton")
+    RemoveButton.Size = UDim2.new(0.2, 0, 1, 0)
+    RemoveButton.Position = UDim2.new(0.8, 5, 0, 0)
+    RemoveButton.BackgroundColor3 = Color3.new(1, 0, 0)
+    RemoveButton.Text = "Remove"
+    RemoveButton.TextColor3 = Color3.new(1, 1, 1)
+    RemoveButton.Parent = Frame
+
+    AddButton.MouseButton1Click:Connect(function()
+        local playerName = TextBox.Text
+        if playerName ~= "" then
+            addToWhitelist(playerName)
+        end
+    end)
+
+    RemoveButton.MouseButton1Click:Connect(function()
+        local playerName = TextBox.Text
+        if playerName ~= "" then
+            removeFromWhitelist(playerName)
+        end
+    end)
+end
+
+createWhitelistGUI()
+
+game:GetService("RunService").Stepped:Connect(function()
+    pcall(function()
+        local sword = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+        if sword then
+            for _, player in ipairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") then
+                    if (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude <= _G.Reach then
+                        if not isWhitelisted(player.Name) then
+                            breakLimbs(player)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+spawn(function()
+    while _G.AutoClicker do
+        wait()
+        pcall(function()
+            local sword = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if sword then
+                sword:Activate()
+            end
+        end)
+    end
+end)
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function()
+    local existingGui = game.CoreGui:FindFirstChild("WhitelistGUI")
+    if existingGui then
+        existingGui.Parent = game.CoreGui
+    else
+        createWhitelistGUI()
+    end
+end)
+
+local function getClosestPlayerWithinReach()
+    local closestPlayer = nil
+    local shortestDistance = _G.Reach
+
+    for _, player in pairs(game.Players:GetPlayers()) do
+        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local targetHRP = player.Character.HumanoidRootPart
+            local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - targetHRP.Position).Magnitude
+
+            -- Check if the player is alive, within reach, and not whitelisted
+            local targetHumanoid = player.Character:FindFirstChildOfClass("Humanoid")
+            if targetHumanoid and targetHumanoid.Health > 0 and distance < shortestDistance and not isWhitelisted(player.Name) then
+                closestPlayer = player
+                shortestDistance = distance
+            end
+        end
+    end
+
+    return closestPlayer
+end
+
+local function lockOnClosestPlayer()
+    if _G.LockOnEnabled then
+        local closestPlayer = getClosestPlayerWithinReach()
+        if closestPlayer and closestPlayer.Character and closestPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local targetHRP = closestPlayer.Character.HumanoidRootPart
+            local playerHRP = game.Players.LocalPlayer.Character.HumanoidRootPart
+            local direction = (Vector3.new(targetHRP.Position.X, playerHRP.Position.Y, targetHRP.Position.Z) - playerHRP.Position).unit
+            playerHRP.CFrame = CFrame.lookAt(playerHRP.Position, playerHRP.Position + direction)
+        end
+    end
+end
+
+game:GetService("RunService").RenderStepped:Connect(lockOnClosestPlayer)
