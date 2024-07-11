@@ -5,9 +5,11 @@ _G.AutoClicker = true
 _G.LockOnEnabled = false
 
 local hardcodedWhitelist = {
-    ["Player1"] = true,
-    ["Player2"] = true,
-    -- Add more players as needed
+    ["FrostedFruitdeVV"] = true,
+    ["iviutha"] = true,
+    ["JDC333"] = true,
+    ["Beeswarmtesterbot120"] = true,
+    ["love4sade"] = true,
 }
 
 local function isWhitelisted(playerName)
