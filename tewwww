@@ -11,6 +11,7 @@ local hardcodedWhitelist = {
     ["Beeswarmtesterbot120"] = true,
     ["love4sade"] = true,
     ["MLK_W"] = true,
+    ["att_cking"] = true,
 }
 
 local function isWhitelisted(playerName)
