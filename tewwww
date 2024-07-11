@@ -10,7 +10,7 @@ local hardcodedWhitelist = {
     ["JDC333"] = true,
     ["Beeswarmtesterbot120"] = true,
     ["love4sade"] = true,
-    ["MaxLuvvsPaige"] = true,
+    ["Beeswarmtesterbot120"] = true,
     ["att_cking"] = true,
     ["dwwewrwex"] = true,
 }
